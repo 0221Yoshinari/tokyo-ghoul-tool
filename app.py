@@ -7,7 +7,7 @@ from scipy.stats import poisson
 GAME_DATA = {
     "AT初当り確率": {1: 394.4, 2: 380.5, 3: 357.0, 4: 325.9, 5: 291.2, 6: 261.3},
     "CZ出現率トータル": {1: 262.6, 2: 255.6, 3: 246.5, 4: 233.1, 5: 216.4, 6: 203.7},
-    "CZ_レミニセンス当選率": {1: 300.5, 2: 295.1, 3: 287.6, 4: 276.7, 5: 262.7, 6: 251.2},
+    "CZ_レミニセンス当選率": {1: 300.5, 2: 295.1, 3: 287.6, 4: 172.8, 5: 1226.6, 6: 1074.9}, # 修正済み
     "CZ_大喰らいのリゼ当選率": {1: 2079.1, 2: 1906.5, 3: 1722.8, 4: 1478.9, 5: 1226.6, 6: 1074.9},
     "弱チェリーCZ当選率_通常滞在時": {1: 0.0027, 2: 0.0029, 3: 0.0031, 4: 0.0033, 5: 0.0038, 6: 0.0043},
     "弱チェリーCZ当選率_高確滞在時": {1: 0.0059, 2: 0.0063, 3: 0.0069, 4: 0.0073, 5: 0.0083, 6: 0.0095},
@@ -28,54 +28,55 @@ GAME_DATA = {
 }
 
 # 示唆系のデータ（回数を入力するため、示唆ごとの確率変動率を設定）
-# type: exact, min_setting, exclude_setting, even_settings, odd_settings, normal
+# type: exact, min_setting, exclude_setting, even_settings, odd_settings, normal, high_settings
 # value_multiplier: 示唆が出た場合に、その設定の尤度をどれだけ強く（または弱く）するか
+# exclude_multiplier: 示唆に反する設定の尤度をどれだけ減らすか
 HINT_DATA = {
-    "CZ失敗時カード_鈴屋什造（赤枠）": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 5.0}, # 偶数設定濃厚
-    "CZ失敗時カード_泉（金枠）": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0}, # 設定4以上濃厚
-    "CZ失敗時カード_有馬貴将（虹枠）": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0}, # 設定6濃厚
+    "CZ失敗時カード_鈴屋什造（赤枠）": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "CZ失敗時カード_泉（金枠）": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0, "exclude_multiplier": 1e-3},
+    "CZ失敗時カード_有馬貴将（虹枠）": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
 
-    "滞納状況示唆_僕にはディナーでもどうだい？": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 2.0},
-    "滞納状況示唆_不思議な香りだ…（招待状：黒）": {"type": "exact_setting", "setting": 1, "value_multiplier": 5.0},
-    "滞納状況示唆_君はなかなか": {"type": "exact_setting", "setting": 2, "value_multiplier": 5.0},
-    "滞納状況示唆_君はなかなか…（本を良いね）": {"type": "exact_setting", "setting": 3, "value_multiplier": 5.0},
-    "滞納状況示唆_僕としたことだがな": {"type": "exact_setting", "setting": 4, "value_multiplier": 5.0},
-    "滞納状況示唆_存分に": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0},
-    "滞納状況示唆_特別な夜を過ごし": {"type": "exact_setting", "setting": 6, "value_multiplier": 100.0},
+    "滞納状況示唆_僕にはディナーでもどうだい？": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 2.0, "exclude_multiplier": 0.5},
+    "滞納状況示唆_不思議な香りだ…（招待状：黒）": {"type": "exact_setting", "setting": 1, "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "滞納状況示唆_君はなかなか": {"type": "exact_setting", "setting": 2, "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "滞納状況示唆_君はなかなか…（本を良いね）": {"type": "exact_setting", "setting": 3, "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "滞納状況示唆_僕としたことだがな": {"type": "exact_setting", "setting": 4, "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "滞納状況示唆_存分に": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0, "exclude_multiplier": 1e-3},
+    "滞納状況示唆_特別な夜を過ごし": {"type": "exact_setting", "setting": 6, "value_multiplier": 100.0, "exclude_multiplier": 1e-10},
 
-    "AT終了画面_金木研（通常）": {"type": "normal"}, # 特になし、通常は尤度変更なし
-    "AT終了画面_旧多二福（月）": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 5.0},
-    "AT終了画面_アキラ（カネキ隣）": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0},
-    "AT終了画面_ウタ（花）": {"type": "exact_setting", "setting": 6, "value_multiplier": 100.0},
-    "AT終了画面_エト（集合）": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0},
-    "AT終了画面_全員集合（アニメ2期最終話風）": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0},
-    "AT終了画面_あんていく全員": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0},
+    "AT終了画面_金木研（通常）": {"type": "normal"}, # 特になし、尤度変更なし
+    "AT終了画面_旧多二福（月）": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "AT終了画面_アキラ（カネキ隣）": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0, "exclude_multiplier": 1e-3},
+    "AT終了画面_ウタ（花）": {"type": "exact_setting", "setting": 6, "value_multiplier": 100.0, "exclude_multiplier": 1e-10},
+    "AT終了画面_エト（集合）": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
+    "AT終了画面_全員集合（アニメ2期最終話風）": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
+    "AT終了画面_あんていく全員": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
 
-    "エンディングカード_奇数設定示唆[弱]": {"type": "odd_settings", "settings": [1, 3, 5], "value_multiplier": 2.0, "exclude_multiplier": 0.5}, # 奇数でない場合に減らす倍率も設定
+    "エンディングカード_奇数設定示唆[弱]": {"type": "odd_settings", "settings": [1, 3, 5], "value_multiplier": 2.0, "exclude_multiplier": 0.5},
     "エンディングカード_奇数設定示唆[強]": {"type": "odd_settings", "settings": [1, 3, 5], "value_multiplier": 5.0, "exclude_multiplier": 0.1},
     "エンディングカード_偶数設定示唆[弱]": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 2.0, "exclude_multiplier": 0.5},
     "エンディングカード_偶数設定示唆[強]": {"type": "even_settings", "settings": [2, 4, 6], "value_multiplier": 5.0, "exclude_multiplier": 0.1},
     "エンディングカード_高設定示唆[弱]": {"type": "high_settings", "settings": [4, 5, 6], "value_multiplier": 2.0, "exclude_multiplier": 0.5},
     "エンディングカード_高設定示唆[強]": {"type": "high_settings", "settings": [4, 5, 6], "value_multiplier": 5.0, "exclude_multiplier": 0.1},
-    "エンディングカード_設定1否定": {"type": "exclude_setting", "setting": 1, "value_multiplier": 1e-5}, # 否定の場合はほぼゼロ
+    "エンディングカード_設定1否定": {"type": "exclude_setting", "setting": 1, "value_multiplier": 1e-5},
     "エンディングカード_設定2否定": {"type": "exclude_setting", "setting": 2, "value_multiplier": 1e-5},
     "エンディングカード_設定3否定": {"type": "exclude_setting", "setting": 3, "value_multiplier": 1e-5},
     "エンディングカード_設定4否定": {"type": "exclude_setting", "setting": 4, "value_multiplier": 1e-5},
     "エンディングカード_設定5否定": {"type": "exclude_setting", "setting": 5, "value_multiplier": 1e-5},
-    "エンディングカード_設定3以上濃厚": {"type": "min_setting", "setting": 3, "value_multiplier": 5.0},
-    "エンディングカード_設定4以上濃厚": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0},
-    "エンディングカード_設定5以上濃厚": {"type": "min_setting", "setting": 5, "value_multiplier": 50.0},
-    "エンディングカード_設定6濃厚": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0},
+    "エンディングカード_設定3以上濃厚": {"type": "min_setting", "setting": 3, "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "エンディングカード_設定4以上濃厚": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0, "exclude_multiplier": 1e-3},
+    "エンディングカード_設定5以上濃厚": {"type": "min_setting", "setting": 5, "value_multiplier": 50.0, "exclude_multiplier": 1e-3},
+    "エンディングカード_設定6濃厚": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
 
-    "獲得枚数表示_456 OVER": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0}, # 設定4以上濃厚
-    "獲得枚数表示_666 OVER": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0}, # 設定6濃厚
-    "獲得枚数表示_1000-7 OVER": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0}, # 設定6濃厚
+    "獲得枚数表示_456 OVER": {"type": "min_setting", "setting": 4, "value_multiplier": 10.0, "exclude_multiplier": 1e-3},
+    "獲得枚数表示_666 OVER": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
+    "獲得枚数表示_1000-7 OVER": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
 
-    "ナミちゃんトロフィー_銅（700Gで確認）": {"type": "min_setting", "setting": 2, "value_multiplier": 5.0},
-    "ナミちゃんトロフィー_銀": {"type": "min_setting", "setting": 3, "value_multiplier": 10.0},
-    "ナミちゃんトロフィー_金": {"type": "min_setting", "setting": 4, "value_multiplier": 20.0},
-    "ナミちゃんトロフィー_キリン": {"type": "min_setting", "setting": 5, "value_multiplier": 50.0},
-    "ナミちゃんトロフィー_虹": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0},
+    "ナミちゃんトロフィー_銅（700Gで確認）": {"type": "min_setting", "setting": 2, "value_multiplier": 5.0, "exclude_multiplier": 1e-3},
+    "ナミちゃんトロフィー_銀": {"type": "min_setting", "setting": 3, "value_multiplier": 10.0, "exclude_multiplier": 1e-3},
+    "ナミちゃんトロフィー_金": {"type": "min_setting", "setting": 4, "value_multiplier": 20.0, "exclude_multiplier": 1e-3},
+    "ナミちゃんトロフィー_キリン": {"type": "min_setting", "setting": 5, "value_multiplier": 50.0, "exclude_multiplier": 1e-3},
+    "ナミちゃんトロフィー_虹": {"type": "exact_setting", "setting": 6, "value_multiplier": 1000.0, "exclude_multiplier": 1e-10},
 }
 
 
@@ -92,14 +93,14 @@ def calculate_likelihood(observed_count, total_count, target_rate_value, is_prob
     # 観測回数もゼロなら影響を与えない（データがないのと同じ）
     if observed_count <= 0 and total_count > 0:
         # ただし、解析値が0%なのに観測値が0なら尤度が高い
-        if (is_probability_rate and target_rate_value == 0) or \
+        if (is_probability_rate and target_rate_value <= 1e-10) or \
            (not is_probability_rate and target_rate_value == float('inf')): # 分母無限大=確率0
            return 1.0 # 観測0で解析値も0なら尤度高い
 
     if is_probability_rate: # %形式の確率の場合
         expected_value = total_count * target_rate_value
     else: # 1/X形式の分母の場合
-        if target_rate_value == 0: # 分母が0はありえないが念のため
+        if target_rate_value <= 1e-10: # 分母が0はありえないが念のため
             return 1e-10 # 確率無限大になるので極めて低い尤度
         expected_value = total_count / target_rate_value
     
@@ -111,7 +112,7 @@ def calculate_likelihood(observed_count, total_count, target_rate_value, is_prob
     likelihood = poisson.pmf(observed_count, expected_value)
     
     # 尤度がゼロになることを避けるため、非常に小さい値を下限とする
-    return max(likelihood, 1e-10) # 1e-10は0.0000000001
+    return max(likelihood, 1e-10)
 
 
 def predict_setting(data_inputs):
@@ -121,92 +122,88 @@ def predict_setting(data_inputs):
     any_data_entered = False
     for key, value in data_inputs.items():
         if isinstance(value, (int, float)):
-            # 数値入力で0より大きい値があるか、または総ゲーム数などの分母情報か
-            if value > 0 and key not in ['total_game_count', 'weak_cherry_count', 'cz_rem_total_count', 'cz_rize_total_count', 'reg_game_150g_total', 'pullback_total_count', 'ura_at_total_count', 'mental_stage_total_count']:
+            if value > 0: # 0より大きい数値入力があればデータありとみなす
                 any_data_entered = True
                 break
-            elif value > 0 and key in ['total_game_count', 'weak_cherry_count', 'cz_rem_total_count', 'cz_rize_total_count', 'reg_game_150g_total', 'pullback_total_count', 'ura_at_total_count', 'mental_stage_total_count']:
-                any_data_entered = True # 分母の入力があればデータありとみなす
-                break
-    
+        
     if not any_data_entered:
         return "データが入力されていません。推測を行うには、少なくとも1つの判別要素を入力してください。"
 
     # --- 確率系の要素の計算 ---
 
     # 総ゲーム数がないと計算できない項目
-    total_game_count = data_inputs['total_game_count']
+    total_game_count = data_inputs.get('total_game_count', 0)
     
     # AT初当り確率
-    if total_game_count > 0 and data_inputs['at_first_hit_count'] >= 0:
+    if total_game_count > 0 and data_inputs.get('at_first_hit_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["AT初当り確率"].items():
             likelihood = calculate_likelihood(data_inputs['at_first_hit_count'], total_game_count, rate_val, is_probability_rate=False)
             overall_likelihoods[setting] *= likelihood
 
     # CZ出現率トータル
-    if total_game_count > 0 and data_inputs['cz_total_count'] >= 0:
+    if total_game_count > 0 and data_inputs.get('cz_total_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["CZ出現率トータル"].items():
             likelihood = calculate_likelihood(data_inputs['cz_total_count'], total_game_count, rate_val, is_probability_rate=False)
             overall_likelihoods[setting] *= likelihood
 
     # 各CZの当選率
-    if data_inputs['cz_rem_total_count'] > 0 and data_inputs['cz_rem_observed_count'] >= 0:
+    if data_inputs.get('cz_rem_total_count', 0) > 0 and data_inputs.get('cz_rem_observed_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["CZ_レミニセンス当選率"].items():
             likelihood = calculate_likelihood(data_inputs['cz_rem_observed_count'], data_inputs['cz_rem_total_count'], rate_val, is_probability_rate=False)
             overall_likelihoods[setting] *= likelihood
-    if data_inputs['cz_rize_total_count'] > 0 and data_inputs['cz_rize_observed_count'] >= 0:
+    if data_inputs.get('cz_rize_total_count', 0) > 0 and data_inputs.get('cz_rize_observed_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["CZ_大喰らいのリゼ当選率"].items():
             likelihood = calculate_likelihood(data_inputs['cz_rize_observed_count'], data_inputs['cz_rize_total_count'], rate_val, is_probability_rate=False)
             overall_likelihoods[setting] *= likelihood
 
     # 弱チェリーCZ当選率
-    weak_cherry_count = data_inputs['weak_cherry_count']
+    weak_cherry_count = data_inputs.get('weak_cherry_count', 0)
     if weak_cherry_count > 0:
-        if data_inputs['weak_cherry_cz_count_normal'] >= 0:
+        if data_inputs.get('weak_cherry_cz_count_normal', 0) >= 0:
             for setting, rate_val in GAME_DATA["弱チェリーCZ当選率_通常滞在時"].items():
                 likelihood = calculate_likelihood(data_inputs['weak_cherry_cz_count_normal'], weak_cherry_count, rate_val, is_probability_rate=True)
                 overall_likelihoods[setting] *= likelihood
-        if data_inputs['weak_cherry_cz_count_high'] >= 0:
+        if data_inputs.get('weak_cherry_cz_count_high', 0) >= 0:
              for setting, rate_val in GAME_DATA["弱チェリーCZ当選率_高確滞在時"].items():
                 likelihood = calculate_likelihood(data_inputs['weak_cherry_cz_count_high'], weak_cherry_count, rate_val, is_probability_rate=True)
                 overall_likelihoods[setting] *= likelihood
 
     # 規定ゲーム数150G以内CZ当選率 (発生回数と総試行回数)
-    if data_inputs['reg_game_150g_total'] > 0 and data_inputs['reg_game_150g_count'] >= 0:
+    if data_inputs.get('reg_game_150g_total', 0) > 0 and data_inputs.get('reg_game_150g_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["規定ゲーム数150G以内CZ当選率"].items():
             likelihood = calculate_likelihood(data_inputs['reg_game_150g_count'], data_inputs['reg_game_150g_total'], rate_val, is_probability_rate=True)
             overall_likelihoods[setting] *= likelihood
 
     # 下段リプレイ出現率
-    if total_game_count > 0 and data_inputs['lower_replay_count'] >= 0:
+    if total_game_count > 0 and data_inputs.get('lower_replay_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["下段リプレイ出現率"].items():
             likelihood = calculate_likelihood(data_inputs['lower_replay_count'], total_game_count, rate_val, is_probability_rate=False)
             overall_likelihoods[setting] *= likelihood
 
     # 初当りエピソードボーナス当選率
-    if data_inputs['at_first_hit_count'] > 0 and data_inputs['ep_bonus_count'] >= 0:
+    if data_inputs.get('at_first_hit_count', 0) > 0 and data_inputs.get('ep_bonus_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["初当りエピソードボーナス当選率"].items():
             likelihood = calculate_likelihood(data_inputs['ep_bonus_count'], data_inputs['at_first_hit_count'], rate_val, is_probability_rate=False)
             overall_likelihoods[setting] *= likelihood
             
     # 精神世界ステージ滞在G数振り分け (回数で評価)
-    if data_inputs['mental_stage_total_count'] > 0:
+    if data_inputs.get('mental_stage_total_count', 0) > 0:
         for setting in range(1, 7):
             setting_likelihood = 1.0
             total_obs = data_inputs['mental_stage_total_count']
 
             # 10G
-            if data_inputs['mental_stage_10g_count'] >= 0:
+            if data_inputs.get('mental_stage_10g_count', 0) >= 0:
                 obs_10g = data_inputs['mental_stage_10g_count']
                 expected_10g_rate = GAME_DATA["精神世界ステージ滞在G数_10G"][setting]
                 setting_likelihood *= calculate_likelihood(obs_10g, total_obs, expected_10g_rate, is_probability_rate=True)
             # 20G
-            if data_inputs['mental_stage_20g_count'] >= 0:
+            if data_inputs.get('mental_stage_20g_count', 0) >= 0:
                 obs_20g = data_inputs['mental_stage_20g_count']
                 expected_20g_rate = GAME_DATA["精神世界ステージ滞在G数_20G"][setting]
                 setting_likelihood *= calculate_likelihood(obs_20g, total_obs, expected_20g_rate, is_probability_rate=True)
             # 30G
-            if data_inputs['mental_stage_30g_count'] >= 0:
+            if data_inputs.get('mental_stage_30g_count', 0) >= 0:
                 obs_30g = data_inputs['mental_stage_30g_count']
                 expected_30g_rate = GAME_DATA["精神世界ステージ滞在G数_30G"][setting]
                 setting_likelihood *= calculate_likelihood(obs_30g, total_obs, expected_30g_rate, is_probability_rate=True)
@@ -214,13 +211,13 @@ def predict_setting(data_inputs):
             overall_likelihoods[setting] *= setting_likelihood
 
     # 引き戻し（即前兆）確率 (回数で評価)
-    if data_inputs['pullback_total_count'] > 0 and data_inputs['pullback_success_count'] >= 0:
+    if data_inputs.get('pullback_total_count', 0) > 0 and data_inputs.get('pullback_success_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["引き戻し（即前兆）確率"].items():
             likelihood = calculate_likelihood(data_inputs['pullback_success_count'], data_inputs['pullback_total_count'], rate_val, is_probability_rate=True)
             overall_likelihoods[setting] *= likelihood
 
     # 裏AT当選率 (回数で評価)
-    if data_inputs['ura_at_total_count'] > 0 and data_inputs['ura_at_success_count'] >= 0:
+    if data_inputs.get('ura_at_total_count', 0) > 0 and data_inputs.get('ura_at_success_count', 0) >= 0:
         for setting, rate_val in GAME_DATA["裏AT当選率_初当り経由"].items():
             likelihood = calculate_likelihood(data_inputs['ura_at_success_count'], data_inputs['ura_at_total_count'], rate_val, is_probability_rate=True)
             overall_likelihoods[setting] *= likelihood
@@ -278,6 +275,7 @@ def predict_setting(data_inputs):
     # --- 最終結果の処理 ---
     total_overall_likelihood_sum = sum(overall_likelihoods.values())
     if total_overall_likelihood_sum == 0: # 全ての尤度がゼロの場合
+        # 全設定がゼロの場合は、エラーまたは均等割り振り（今回はエラー表示）
         return "データが不足しているか、矛盾しているため、推測が困難です。入力値を見直してください。"
 
     # 尤度を確率に正規化（合計が100%になるようにする）
@@ -302,7 +300,8 @@ def predict_setting(data_inputs):
 st.set_page_config(
     page_title="東京喰種 設定推測ツール",
     layout="centered",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    page_icon="🎰" # 新しいタブアイコン
 )
 
 st.title("🎰 東京喰種 スロット設定推測ツール 🎰")
@@ -311,187 +310,220 @@ st.markdown(
     """
     このツールは、東京喰種の設定判別ツールです。通常時・AT中の様々な判別要素を総合的に判断し、
     台の設定（1〜6段階）を推測します。ご自身の遊技の参考に活用してみてください！
+    ---
     """
 )
 
 # Sidebar for basic instructions
-st.sidebar.title("使い方")
-st.sidebar.markdown(
-    """
-    各項目で、ご自身で確認できたデータや示唆を入力してください。
-    
-    **数値入力項目**は、実測回数や総ゲーム数などを入力します。
-    **示唆項目**は、出現した回数を入力します。
-    
-    入力が完了したら、一番下の「推測結果を表示」ボタンをクリックしてください。
-    """
-)
+with st.sidebar:
+    st.title("💡 ツールの使い方")
+    st.markdown(
+        """
+        各項目で、ご自身で確認できたデータや示唆を入力してください。
+        
+        **実測値や回数**を入力する項目と、**出現回数**を入力する項目があります。
+        
+        入力が完了したら、一番下の「推測結果を表示」ボタンをクリックしてください。
+        ---
+        """
+    )
+    st.info("💡 **ヒント:** スクロールして全ての項目を確認してくださいね！")
+
 
 # --- 入力セクション ---
 st.header("▼データ入力▼")
 
 # --- 1. 基本データ ---
-st.subheader("1. 基本データ (通常時・AT合算)")
-col_g, col_cz, col_at = st.columns(3)
-with col_g:
-    total_game_count = st.number_input("総ゲーム数 (通常時+AT中)", min_value=0, value=0, key="total_game_count")
-with col_cz:
-    cz_total_count = st.number_input("CZ総回数", min_value=0, value=0, key="cz_total_count")
-with col_at:
-    at_first_hit_count = st.number_input("AT初当り回数 (CZ経由含む)", min_value=0, value=0, key="at_first_hit_count")
-
+st.subheader("1. 基本データ (通常時・AT合算) 🎯")
+st.markdown("全体的な遊技データ（総ゲーム数など）を入力します。")
+with st.container(border=True): # コンテナで囲んで視覚的にグループ化
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        total_game_count = st.number_input("総ゲーム数", min_value=0, value=0, help="通常時とAT中の合計ゲーム数を入力します。", key="total_game_count")
+    with col2:
+        cz_total_count = st.number_input("CZ総回数", min_value=0, value=0, help="CZに突入した合計回数を入力します。", key="cz_total_count")
+    with col3:
+        at_first_hit_count = st.number_input("AT初当り回数", min_value=0, value=0, help="CZ経由を含むATの初当り合計回数を入力します。", key="at_first_hit_count")
 st.markdown("---")
 
-# --- 2. 各CZの当選率 ---
-st.subheader("2. 各CZの当選回数と分母")
-st.markdown("※実測回数と試行ゲーム数を入力してください")
-col_rem_val, col_rem_den = st.columns(2)
-with col_rem_val:
-    cz_rem_observed_count = st.number_input("レミニセンスCZ 当選回数", min_value=0, value=0, key="cz_rem_observed_count")
-with col_rem_den:
-    cz_rem_total_count = st.number_input("レミニセンスCZ 試行ゲーム数 (分母)", min_value=0, value=0, key="cz_rem_total_count")
+# --- 2. 各CZの当選回数と分母 ---
+st.subheader("2. CZごとの当選回数と試行分母 📈")
+st.markdown("特定のCZの当選状況を入力します。")
+with st.container(border=True):
+    col_rem_val, col_rem_den = st.columns(2)
+    with col_rem_val:
+        cz_rem_observed_count = st.number_input("レミニセンスCZ当選回数", min_value=0, value=0, key="cz_rem_observed_count")
+    with col_rem_den:
+        cz_rem_total_count = st.number_input("レミニセンスCZ試行G数", min_value=0, value=0, help="レミニセンスCZの当選分母となるゲーム数を入力します。", key="cz_rem_total_count")
 
-col_rize_val, col_rize_den = st.columns(2)
-with col_rize_val:
-    cz_rize_observed_count = st.number_input("大喰らいのリゼCZ 当選回数", min_value=0, value=0, key="cz_rize_observed_count")
-with col_rize_den:
-    cz_rize_total_count = st.number_input("大喰らいのリゼCZ 試行ゲーム数 (分母)", min_value=0, value=0, key="cz_rize_total_count")
-
+    col_rize_val, col_rize_den = st.columns(2)
+    with col_rize_val:
+        cz_rize_observed_count = st.number_input("大喰らいのリゼCZ当選回数", min_value=0, value=0, key="cz_rize_observed_count")
+    with col_rize_den:
+        cz_rize_total_count = st.number_input("大喰らいのリゼCZ試行G数", min_value=0, value=0, help="大喰らいのリゼCZの当選分母となるゲーム数を入力します。", key="cz_rize_total_count")
 st.markdown("---")
 
-# --- 3. 弱チェリーのCZ当選率 ---
-st.subheader("3. 弱チェリーのCZ当選回数")
-st.markdown("※弱チェリー総成立回数と、CZに当選した回数を入力してください")
-weak_cherry_count = st.number_input("弱チェリー総成立回数", min_value=0, value=0, key="weak_cherry_count")
-col_wc_norm, col_wc_high = st.columns(2)
-with col_wc_norm:
-    weak_cherry_cz_count_normal = st.number_input("└ 通常滞在時 CZ当選回数", min_value=0, value=0, key="weak_cherry_cz_count_normal")
-with col_wc_high:
-    weak_cherry_cz_count_high = st.number_input("└ 高確滞在時 CZ当選回数", min_value=0, value=0, key="weak_cherry_cz_count_high")
-
+# --- 3. 弱チェリーからのCZ当選状況 ---
+st.subheader("3. 弱チェリーからのCZ当選 🍒")
+st.markdown("弱チェリー総成立回数と、それによるCZ当選状況を入力します。")
+with st.container(border=True):
+    weak_cherry_count = st.number_input("弱チェリー総成立回数", min_value=0, value=0, key="weak_cherry_count")
+    col_wc_norm, col_wc_high = st.columns(2)
+    with col_wc_norm:
+        weak_cherry_cz_count_normal = st.number_input("└ 通常滞在時 CZ当選回数", min_value=0, value=0, key="weak_cherry_cz_count_normal")
+    with col_wc_high:
+        weak_cherry_cz_count_high = st.number_input("└ 高確滞在時 CZ当選回数", min_value=0, value=0, key="weak_cherry_cz_count_high")
 st.markdown("---")
 
-# --- 4. 規定ゲーム数150G以内CZ当選率 ---
-st.subheader("4. 規定ゲーム数150G以内CZ当選回数")
-st.markdown("※150G以内のCZ当選回数と、その試行回数を入力してください")
-col_reg_val, col_reg_den = st.columns(2)
-with col_reg_val:
-    reg_game_150g_count = st.number_input("150G以内CZ当選回数", min_value=0, value=0, key="reg_game_150g_count")
-with col_reg_den:
-    reg_game_150g_total = st.number_input("150G以内CZ当選試行回数 (例: CZ当選区間を150Gと数え、非当選区間も同様に150Gとして数える)", min_value=0, value=0, key="reg_game_150g_total")
-
+# --- 4. 規定ゲーム数150G以内CZ当選回数 ---
+st.subheader("4. 規定ゲーム数150G以内CZ当選回数 ⏰")
+st.markdown("規定ゲーム数での当選状況を入力します。")
+with st.container(border=True):
+    col_reg_val, col_reg_den = st.columns(2)
+    with col_reg_val:
+        reg_game_150g_count = st.number_input("150G以内CZ当選回数", min_value=0, value=0, key="reg_game_150g_count")
+    with col_reg_den:
+        reg_game_150g_total = st.number_input("150G以内CZ当選試行回数", min_value=0, value=0, help="150G以内にCZに当選した区間と、しなかった区間の合計数を入力します。", key="reg_game_150g_total")
 st.markdown("---")
 
 # --- 5. 下段リプレイの出現回数 ---
-st.subheader("5. 下段リプレイの出現回数")
-st.markdown("※総ゲーム数（上記1.で入力）と、下段リプレイの出現回数を入力してください")
-lower_replay_count = st.number_input("下段リプレイ出現回数", min_value=0, value=0, key="lower_replay_count")
-
+st.subheader("5. 下段リプレイの出現回数 ▼")
+st.markdown("総ゲーム数に対する下段リプレイの出現回数を入力します。")
+with st.container(border=True):
+    lower_replay_count = st.number_input("下段リプレイ出現回数", min_value=0, value=0, key="lower_replay_count")
 st.markdown("---")
 
 # --- 6. 初当りエピソードボーナス当選回数 ---
-st.subheader("6. 初当りエピソードボーナス当選回数")
-st.markdown("※AT初当り回数（上記1.で入力）と、エピソードボーナス当選回数を入力してください")
-ep_bonus_count = st.number_input("エピソードボーナス当選回数", min_value=0, value=0, key="ep_bonus_count")
-
+st.subheader("6. 初当りエピソードボーナス当選回数 📚")
+st.markdown("AT初当り中のエピソードボーナス当選状況を入力します。")
+with st.container(border=True):
+    ep_bonus_count = st.number_input("エピソードボーナス当選回数", min_value=0, value=0, key="ep_bonus_count")
 st.markdown("---")
 
 # --- 7. 精神世界ステージ滞在G数振り分け ---
-st.subheader("7. 精神世界ステージ滞在G数振り分け")
-st.markdown("※精神世界ステージに移行した総回数と、それぞれの滞在G数で終了した回数を入力してください")
-mental_stage_total_count = st.number_input("精神世界ステージ移行総回数", min_value=0, value=0, key="mental_stage_total_count")
-col_mental_10, col_mental_20, col_mental_30 = st.columns(3)
-with col_mental_10:
-    mental_stage_10g_count = st.number_input("└ 10G終了回数", min_value=0, value=0, key="mental_stage_10g_count")
-with col_mental_20:
-    mental_stage_20g_count = st.number_input("└ 20G終了回数", min_value=0, value=0, key="mental_stage_20g_count")
-with col_mental_30:
-    mental_stage_30g_count = st.number_input("└ 30G終了回数", min_value=0, value=0, key="mental_stage_30g_count")
-
+st.subheader("7. 精神世界ステージ滞在G数振り分け 💭")
+st.markdown("精神世界ステージ移行時のG数振り分け状況を入力します。")
+with st.container(border=True):
+    mental_stage_total_count = st.number_input("精神世界ステージ移行総回数", min_value=0, value=0, help="精神世界ステージに移行した合計回数を入力します。", key="mental_stage_total_count")
+    col_mental_10, col_mental_20, col_mental_30 = st.columns(3)
+    with col_mental_10:
+        mental_stage_10g_count = st.number_input("└ 10G終了回数", min_value=0, value=0, key="mental_stage_10g_count")
+    with col_mental_20:
+        mental_stage_20g_count = st.number_input("└ 20G終了回数", min_value=0, value=0, key="mental_stage_20g_count")
+    with col_mental_30:
+        mental_stage_30g_count = st.number_input("└ 30G終了回数", min_value=0, value=0, key="mental_stage_30g_count")
 st.markdown("---")
 
-# --- 8. 引き戻し（即前兆）確率 ---
-st.subheader("8. 引き戻し（即前兆）成功回数")
-st.markdown("※引き戻しゾーン（即前兆）に移行した総回数と、引き戻し成功回数を入力してください")
-col_pb_total, col_pb_success = st.columns(2)
-with col_pb_total:
-    pullback_total_count = st.number_input("引き戻しゾーン移行総回数", min_value=0, value=0, key="pullback_total_count")
-with col_pb_success:
-    pullback_success_count = st.number_input("引き戻し成功回数", min_value=0, value=0, key="pullback_success_count")
-
+# --- 8. 引き戻し（即前兆）成功回数 ---
+st.subheader("8. 引き戻し（即前兆）成功回数 🔄")
+st.markdown("引き戻しゾーンでの成功状況を入力します。")
+with st.container(border=True):
+    col_pb_total, col_pb_success = st.columns(2)
+    with col_pb_total:
+        pullback_total_count = st.number_input("引き戻しゾーン移行総回数", min_value=0, value=0, help="引き戻しゾーン（即前兆）に移行した合計回数を入力します。", key="pullback_total_count")
+    with col_pb_success:
+        pullback_success_count = st.number_input("引き戻し成功回数", min_value=0, value=0, key="pullback_success_count")
 st.markdown("---")
 
-# --- 9. 裏AT当選率 (初当り経由) ---
-st.subheader("9. 裏AT当選回数 (初当り経由)")
-st.markdown("※通常時からのAT初当り回数と、そのうち裏ATだった回数を入力してください")
-col_ura_total, col_ura_success = st.columns(2)
-with col_ura_total:
-    ura_at_total_count = st.number_input("通常時からのAT初当り総回数", min_value=0, value=0, key="ura_at_total_count")
-with col_ura_success:
-    ura_at_success_count = st.number_input("裏ATスタート回数", min_value=0, value=0, key="ura_at_success_count")
-
+# --- 9. 裏AT当選回数 (初当り経由) ---
+st.subheader("9. 裏AT当選回数 (初当り経由) ✨")
+st.markdown("通常時からのAT初当りで裏ATスタートだった回数を入力します。")
+with st.container(border=True):
+    col_ura_total, col_ura_success = st.columns(2)
+    with col_ura_total:
+        ura_at_total_count = st.number_input("通常時からのAT初当り総回数", min_value=0, value=0, help="裏ATに当選しなかった場合も含む通常時からのAT初当り総回数を入力します。", key="ura_at_total_count")
+    with col_ura_success:
+        ura_at_success_count = st.number_input("裏ATスタート回数", min_value=0, value=0, key="ura_at_success_count")
 st.markdown("---")
 
-# --- 10. 示唆系の出現状況 (回数入力に修正) ---
-st.subheader("10. 示唆系の出現回数")
-st.markdown("※各示唆が出現した回数を入力してください。")
+# --- 10. 示唆系の出現回数 (回数入力に修正) ---
+st.subheader("10. 示唆系の出現回数 🔔")
+st.markdown("各示唆が出現した回数を入力してください。")
+with st.container(border=True):
+    st.markdown("##### CZ失敗時カード")
+    col_cz_card1, col_cz_card2, col_cz_card3 = st.columns(3)
+    with col_cz_card1:
+        cz_fail_card_suzuki_count = st.number_input("鈴屋什造（赤枠）", min_value=0, value=0, key="cz_fail_card_suzuki")
+    with col_cz_card2:
+        cz_fail_card_izumi_count = st.number_input("泉（金枠）", min_value=0, value=0, key="cz_fail_card_izumi")
+    with col_cz_card3:
+        cz_fail_card_arima_count = st.number_input("有馬貴将（虹枠）", min_value=0, value=0, key="cz_fail_card_arima")
 
-st.markdown("##### CZ失敗時カード")
-cz_fail_card_suzuki_count = st.number_input("鈴屋什造（赤枠）出現回数", min_value=0, value=0, key="cz_fail_card_suzuki")
-cz_fail_card_izumi_count = st.number_input("泉（金枠）出現回数", min_value=0, value=0, key="cz_fail_card_izumi")
-cz_fail_card_arima_count = st.number_input("有馬貴将（虹枠）出現回数", min_value=0, value=0, key="cz_fail_card_arima")
+    st.markdown("##### 滞納状況示唆")
+    col_tainou1, col_tainou2, col_tainou3 = st.columns(3)
+    with col_tainou1:
+        tainou_boku_dinner_count = st.number_input("僕にはディナーでもどうだい？", min_value=0, value=0, key="tainou_boku_dinner")
+        tainou_kimi_nakanaka_count = st.number_input("君はなかなか", min_value=0, value=0, key="tainou_kimi_nakanaka")
+        tainou_zonbun_count = st.number_input("存分に", min_value=0, value=0, key="tainou_zonbun")
+    with col_tainou2:
+        tainou_fushigi_kaori_count = st.number_input("不思議な香りだ…（招待状：黒）", min_value=0, value=0, key="tainou_fushigi_kaori")
+        tainou_kimi_nakanaka_hon_count = st.number_input("君はなかなか…（本を良いね）", min_value=0, value=0, key="tainou_kimi_nakanaka_hon")
+        tainou_tokubetsu_yoru_count = st.number_input("特別な夜を過ごし", min_value=0, value=0, key="tainou_tokubetsu_yoru")
+    with col_tainou3:
+        tainou_boku_shitakoto_count = st.number_input("僕としたことだがな", min_value=0, value=0, key="tainou_boku_shitakoto")
 
-st.markdown("##### 滞納状況示唆")
-tainou_boku_dinner_count = st.number_input("「僕にはディナーでもどうだい？」出現回数", min_value=0, value=0, key="tainou_boku_dinner")
-tainou_fushigi_kaori_count = st.number_input("「不思議な香りだ…（招待状：黒）」出現回数", min_value=0, value=0, key="tainou_fushigi_kaori")
-tainou_kimi_nakanaka_count = st.number_input("「君はなかなか」出現回数", min_value=0, value=0, key="tainou_kimi_nakanaka")
-tainou_kimi_nakanaka_hon_count = st.number_input("「君はなかなか…（本を良いね）」出現回数", min_value=0, value=0, key="tainou_kimi_nakanaka_hon")
-tainou_boku_shitakoto_count = st.number_input("「僕としたことだがな」出現回数", min_value=0, value=0, key="tainou_boku_shitakoto")
-tainou_zonbun_count = st.number_input("「存分に」出現回数", min_value=0, value=0, key="tainou_zonbun")
-tainou_tokubetsu_yoru_count = st.number_input("「特別な夜を過ごし」出現回数", min_value=0, value=0, key="tainou_tokubetsu_yoru")
+    st.markdown("##### AT終了画面")
+    col_at_end1, col_at_end2, col_at_end3 = st.columns(3)
+    with col_at_end1:
+        at_end_kinemoto_count = st.number_input("金木研（通常）", min_value=0, value=0, key="at_end_kinemoto")
+        at_end_uta_count = st.number_input("ウタ（花）", min_value=0, value=0, key="at_end_uta")
+        at_end_anteiku_count = st.number_input("あんていく全員", min_value=0, value=0, key="at_end_anteiku")
+    with col_at_end2:
+        at_end_futa_count = st.number_input("旧多二福（月）", min_value=0, value=0, key="at_end_futa")
+        at_end_eto_count = st.number_input("エト（集合）", min_value=0, value=0, key="at_end_eto")
+    with col_at_end3:
+        at_end_akira_count = st.number_input("アキラ（カネキ隣）", min_value=0, value=0, key="at_end_akira")
+        at_end_all_anime_count = st.number_input("全員集合（アニメ2期最終話風）", min_value=0, value=0, key="at_end_all_anime")
 
-st.markdown("##### AT終了画面")
-at_end_kinemoto_count = st.number_input("金木研（通常）出現回数", min_value=0, value=0, key="at_end_kinemoto")
-at_end_futa_count = st.number_input("旧多二福（月）出現回数", min_value=0, value=0, key="at_end_futa")
-at_end_akira_count = st.number_input("アキラ（カネキ隣）出現回数", min_value=0, value=0, key="at_end_akira")
-at_end_uta_count = st.number_input("ウタ（花）出現回数", min_value=0, value=0, key="at_end_uta")
-at_end_eto_count = st.number_input("エト（集合）出現回数", min_value=0, value=0, key="at_end_eto")
-at_end_all_anime_count = st.number_input("全員集合（アニメ2期最終話風）出現回数", min_value=0, value=0, key="at_end_all_anime")
-at_end_anteiku_count = st.number_input("あんていく全員出現回数", min_value=0, value=0, key="at_end_anteiku")
 
-st.markdown("##### エンディング中のカード")
-ending_card_kisu_w_count = st.number_input("奇数設定示唆[弱] 出現回数", min_value=0, value=0, key="ending_card_kisu_w")
-ending_card_kisu_s_count = st.number_input("奇数設定示唆[強] 出現回数", min_value=0, value=0, key="ending_card_kisu_s")
-ending_card_gusu_w_count = st.number_input("偶数設定示唆[弱] 出現回数", min_value=0, value=0, key="ending_card_gusu_w")
-ending_card_gusu_s_count = st.number_input("偶数設定示唆[強] 出現回数", min_value=0, value=0, key="ending_card_gusu_s")
-ending_card_kouset_w_count = st.number_input("高設定示唆[弱] 出現回数", min_value=0, value=0, key="ending_card_kouset_w")
-ending_card_kouset_s_count = st.number_input("高設定示唆[強] 出現回数", min_value=0, value=0, key="ending_card_kouset_s")
-ending_card_1hitei_count = st.number_input("設定1否定 出現回数", min_value=0, value=0, key="ending_card_1hitei")
-ending_card_2hitei_count = st.number_input("設定2否定 出現回数", min_value=0, value=0, key="ending_card_2hitei")
-ending_card_3hitei_count = st.number_input("設定3否定 出現回数", min_value=0, value=0, key="ending_card_3hitei")
-ending_card_4hitei_count = st.number_input("設定4否定 出現回数", min_value=0, value=0, key="ending_card_4hitei")
-ending_card_5hitei_count = st.number_input("設定5否定 出現回数", min_value=0, value=0, key="ending_card_5hitei")
-ending_card_3ijou_count = st.number_input("設定3以上濃厚 出現回数", min_value=0, value=0, key="ending_card_3ijou")
-ending_card_4ijou_count = st.number_input("設定4以上濃厚 出現回数", min_value=0, value=0, key="ending_card_4ijou")
-ending_card_5ijou_count = st.number_input("設定5以上濃厚 出現回数", min_value=0, value=0, key="ending_card_5ijou")
-ending_card_6noukou_count = st.number_input("設定6濃厚 出現回数", min_value=0, value=0, key="ending_card_6noukou")
+    with st.expander("エンディング中のカードを表示/非表示"): # 折りたたみ要素
+        st.markdown("##### エンディング中のカード")
+        col_ending_card1, col_ending_card2, col_ending_card3 = st.columns(3)
+        with col_ending_card1:
+            ending_card_kisu_w_count = st.number_input("奇数設定示唆[弱]", min_value=0, value=0, key="ending_card_kisu_w")
+            ending_card_gusu_w_count = st.number_input("偶数設定示唆[弱]", min_value=0, value=0, key="ending_card_gusu_w")
+            ending_card_kouset_w_count = st.number_input("高設定示唆[弱]", min_value=0, value=0, key="ending_card_kouset_w")
+            ending_card_1hitei_count = st.number_input("設定1否定", min_value=0, value=0, key="ending_card_1hitei")
+            ending_card_3ijou_count = st.number_input("設定3以上濃厚", min_value=0, value=0, key="ending_card_3ijou")
+        with col_ending_card2:
+            ending_card_kisu_s_count = st.number_input("奇数設定示唆[強]", min_value=0, value=0, key="ending_card_kisu_s")
+            ending_card_gusu_s_count = st.number_input("偶数設定示唆[強]", min_value=0, value=0, key="ending_card_gusu_s")
+            ending_card_kouset_s_count = st.number_input("高設定示唆[強]", min_value=0, value=0, key="ending_card_kouset_s")
+            ending_card_2hitei_count = st.number_input("設定2否定", min_value=0, value=0, key="ending_card_2hitei")
+            ending_card_4ijou_count = st.number_input("設定4以上濃厚", min_value=0, value=0, key="ending_card_4ijou")
+        with col_ending_card3:
+            ending_card_3hitei_count = st.number_input("設定3否定", min_value=0, value=0, key="ending_card_3hitei")
+            ending_card_4hitei_count = st.number_input("設定4否定", min_value=0, value=0, key="ending_card_4hitei")
+            ending_card_5hitei_count = st.number_input("設定5否定", min_value=0, value=0, key="ending_card_5hitei")
+            ending_card_5ijou_count = st.number_input("設定5以上濃厚", min_value=0, value=0, key="ending_card_5ijou")
+            ending_card_6noukou_count = st.number_input("設定6濃厚", min_value=0, value=0, key="ending_card_6noukou")
 
-st.markdown("##### 獲得枚数表示")
-get_count_456_count = st.number_input("456 OVER 出現回数", min_value=0, value=0, key="get_count_456")
-get_count_666_count = st.number_input("666 OVER 出現回数", min_value=0, value=0, key="get_count_666")
-get_count_1000_7_count = st.number_input("1000-7 OVER 出現回数", min_value=0, value=0, key="get_count_1000_7")
 
-st.markdown("##### ナミちゃんトロフィー")
-nami_trophy_bronze_count = st.number_input("銅トロフィー出現回数", min_value=0, value=0, key="nami_trophy_bronze")
-nami_trophy_silver_count = st.number_input("銀トロフィー出現回数", min_value=0, value=0, key="nami_trophy_silver")
-nami_trophy_gold_count = st.number_input("金トロフィー出現回数", min_value=0, value=0, key="nami_trophy_gold")
-nami_trophy_kirin_count = st.number_input("キリントロフィー出現回数", min_value=0, value=0, key="nami_trophy_kirin")
-nami_trophy_rainbow_count = st.number_input("虹トロフィー出現回数", min_value=0, value=0, key="nami_trophy_rainbow")
+    st.markdown("##### 獲得枚数表示")
+    col_get_count1, col_get_count2, col_get_count3 = st.columns(3)
+    with col_get_count1:
+        get_count_456_count = st.number_input("456 OVER", min_value=0, value=0, key="get_count_456")
+    with col_get_count2:
+        get_count_666_count = st.number_input("666 OVER", min_value=0, value=0, key="get_count_666")
+    with col_get_count3:
+        get_count_1000_7_count = st.number_input("1000-7 OVER", min_value=0, value=0, key="get_count_1000_7")
+
+    st.markdown("##### ナミちゃんトロフィー")
+    col_nami_trophy1, col_nami_trophy2, col_nami_trophy3 = st.columns(3)
+    with col_nami_trophy1:
+        nami_trophy_bronze_count = st.number_input("銅トロフィー", min_value=0, value=0, key="nami_trophy_bronze")
+        nami_trophy_gold_count = st.number_input("金トロフィー", min_value=0, value=0, key="nami_trophy_gold")
+        nami_trophy_rainbow_count = st.number_input("虹トロフィー", min_value=0, value=0, key="nami_trophy_rainbow")
+    with col_nami_trophy2:
+        nami_trophy_silver_count = st.number_input("銀トロフィー", min_value=0, value=0, key="nami_trophy_silver")
+        nami_trophy_kirin_count = st.number_input("キリントロフィー", min_value=0, value=0, key="nami_trophy_kirin")
 
 st.markdown("---")
 
 # --- 推測実行ボタン ---
-if st.button("推測結果を表示"):
+st.subheader("▼結果表示▼")
+st.markdown("全てのデータ入力が終わったら、以下のボタンをクリックしてください。")
+if st.button("✨ 推測結果を表示 ✨", type="primary"): # ボタンを強調
     # 全ての入力データを辞書にまとめる
     user_inputs = {
         'total_game_count': total_game_count,
